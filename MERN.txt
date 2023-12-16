@@ -1,0 +1,545 @@
+
+--------server.js---------------
+
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+
+
+
+
+
+ //run server
+ const app = express();
+//import routes
+const postRoutes = require('./routes/posts');
+
+
+ //app middleware
+ app.use(bodyParser.json());
+ // ... rest of your server setup
+ app.use(cors());
+
+ app.use((err, req, res, next) => {
+   console.error(err.stack);
+   res.status(500).send('Internal Server Error');
+ });
+
+
+
+
+//routes middleware
+app.use(postRoutes);
+
+
+ //declar a port
+ const PORT = 8000;
+ const DB_URL = 'mongodb+srv://nimesh1999:Nimesh1999@mernapp.urzaewz.mongodb.net/mernCrud?retryWrites=true&w=majority';
+
+ mongoose.connect(DB_URL,{
+   useNewUrlParser: true,
+   useUnifiedTopology: true
+})
+ .then(()=>{
+    console.log("DB Connected");
+ }).catch((err) => {
+    console.error("DB connection Error:", err);
+  });
+
+
+
+
+
+
+ app.listen(PORT,()=>
+ console.log(`App is Running on ${PORT}`));
+
+
+
+-----------------------
+--------------posts.js----------------------
+
+
+const express = require('express');
+const Posts = require('../models/posts');
+
+const router = express.Router();
+
+router.post('/post/save', (req, res) => {
+    let newPost = new Posts(req.body);
+
+    newPost.save().then(() => {
+            return res.status(200).json({
+                success: "Post saved successfully"
+            });
+        })
+        .catch((err) => {
+            return res.status(400).json({
+                error: err
+            });
+        });
+});
+
+
+
+
+//get posts
+router.get('/posts', (req, res) => {
+    // Assuming Posts.find() returns a promise
+    Posts.find()
+        .then(posts => {
+            return res.status(200).json({
+                success: true,
+                existingPosts: posts
+            });
+        })
+        .catch(err => {
+            return res.status(400).json({
+                success: false,
+                error: err.message
+            });
+        });
+});
+
+
+// PUT request to update a post by ID
+router.put('/post/update/:id', (req, res) => {
+    const postId = req.params.id;
+    const updatedPostData = req.body;
+
+    // Assuming Posts.findByIdAndUpdate() returns a promise
+    Posts.findByIdAndUpdate(postId, updatedPostData, { new: true })
+        .then(updatedPost => {
+            if (!updatedPost) {
+                return res.status(404).json({
+                    success: false,
+                    error: "Post not found"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                updatedPost: updatedPost
+            });
+        })
+        .catch(err => {
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        });
+});
+
+
+// DELETE request to delete a post by ID
+router.delete('/post/delete/:id', (req, res) => {
+    const postId = req.params.id;
+
+    // Assuming Posts.findByIdAndDelete() returns a promise
+    Posts.findByIdAndDelete(postId)
+        .then(deletedPost => {
+            if (!deletedPost) {
+                return res.status(404).json({
+                    success: false,
+                    error: "Post not found"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                deletedPost: deletedPost
+            });
+        })
+        .catch(err => {
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        });
+});
+
+
+
+// GET request to retrieve a specific post by ID
+router.get('/post/:id', (req, res) => {
+    const postId = req.params.id;
+
+    // Assuming Posts.findById() returns a promise
+    Posts.findById(postId)
+        .then(post => {
+            if (!post) {
+                return res.status(404).json({
+                    success: false,
+                    error: "Post not found"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                post: post
+            });
+        })
+        .catch(err => {
+            return res.status(500).json({
+                success: false,
+                error: err.message
+            });
+        });
+});
+
+
+
+module.exports = router;
+--------------------------------------
+--------------------models------posts.js-----------
+
+
+const mongoose = require('mongoose');
+
+const postSchema = new mongoose.Schema({
+   
+    postCategory:{
+        type:String,
+        required:true
+    },
+    description:{
+        type:String,
+        required:true
+    },
+   
+    topic:{
+        type:String,
+        required:true
+    }
+   
+    
+})
+
+module.exports = mongoose.model('Posts',postSchema)
+
+----------------------------------------
+
+
+
+
+
+
+----------app.js--------------
+import React, { Component } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './components/Home';
+import CreatePost from './components/CreatePost';
+import EditPost from './components/EditPost';
+import PostDetails from './components/PostDetails';
+import NavBar from './components/NavBar';
+
+export default class App extends Component {
+  render() {
+    return (
+      <Router>
+        <div className='container'>
+          <NavBar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/add" element={<CreatePost />} />
+            <Route path="/edit/:id" element={<EditPost />} />
+            <Route path="/post/:id" element={<PostDetails />} />
+          </Routes>
+        </div>
+      </Router>
+    );
+  }
+}
+
+
+
+
+---------index.js----------------------
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------components---------------------
+
+------createPosts.js-----------------
+
+import React, { Component } from 'react'
+
+export default class CreatePost extends Component {
+  render() {
+    return (
+      <div>
+        Create Post
+      </div>
+    )
+  }
+}
+
+
+
+--------editPost.js-------------
+
+import React, { Component } from 'react'
+
+export default class EditPost extends Component {
+  render() {
+    return (
+      <div>
+        edit
+      </div>
+    )
+  }
+}
+
+
+---------Home.js-------------
+
+
+import React, { Component } from "react";
+import axios from "axios";
+
+export default class Home extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      posts: [],
+    };
+  }
+
+  componentDidMount() {
+    this.retrievePosts();
+  }
+
+  retrievePosts() {
+    axios.get("/posts").then((res) => {
+      if (res.data.success) {
+        this.setState({
+          posts: res.data.existingPosts,
+        });
+
+        console.log(this.state.posts);
+      }
+    });
+  }
+
+  render() {
+    return (
+      <div className="container">
+        <p>All Post Home Page</p>
+
+        <table className="table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">topic</th>
+              <th scope="col">description</th>
+              <th scope="col">postCategory</th>
+
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {this.state.posts.map((posts, index) => (
+              <tr key = {index}>
+                <th scope="row">{index + 1}</th>
+
+                <th>
+                  <a href={"/post/${posts._id}"} style={{ TextDecoder: "none" }}>
+                    {posts.topic}
+                  </a>
+                </th>
+                <th scope="row">{posts.description}</th>
+                <th scope="row">{posts.postCategory}</th>
+
+                <th scope="row">
+                  <a className="btn btn-warning" href="#">
+                    <i className="fas fa-edit"></i>Edit
+                  </a>
+                  &nbsp;
+                  <a className="btn btn-danger" href="#">
+                    <i className="far fa-trash-alt"></i>Delete
+                  </a>
+                </th>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <button className="btn btn-success">
+          <a href="/add" style={{ textDecoration: "none", color: "white" }}>
+            create new post
+          </a>
+        </button>
+      </div>
+    );
+  }
+}
+
+
+
+--------------navbar.js----------------
+import React, { Component } from 'react'
+
+export default class NavBar extends Component {
+  render() {
+    return (
+        <nav className='navbar navbar-expand-lg navbar-light' style={{backgroundColor:'#e3f2fd'}}>
+            <div className='container-fluid'>
+
+
+                  <button className='navbar-toggler' type='button' data-bs-toggle="colllapse" data-bs-target="#navbarnav"
+                  aria-controls='navbarNav'
+                  aria-expanded='false' aria-label='Toggle navigation'
+                  >
+                    <span className='navbar-toggler-icon'></span>
+                  </button>
+
+
+   <div className='collapse navbar-collapse' id='navbarNav'>
+    <ul className='navbar-nav'>
+        <li className='nav-item'>
+            <a className='nav-link' aria-aria-current='page' href='/'>Posts</a>
+        </li>
+
+    </ul>
+
+   </div>
+
+
+
+            </div>
+        </nav>
+    )
+  }
+}
+
+
+-------------postdetails.js----------------
+
+import React, { Component } from 'react'
+import axios from "axios";
+
+
+export default class PostDetails extends Component {
+  constructor(props){
+    super(props);
+
+       this.state={
+    post:{}
+         };
+
+  }
+
+  componentDidMoun(){
+
+    const id = this.props.params.id;
+    axios.get(`/post/${id}`).then(res =>{
+     if(res.data.succes){
+      this.setState({
+        post:res.data.post
+      });
+      
+      console.log(this.state.post);
+    }
+  });
+    
+
+  }
+  
+  
+    render() {
+    return (
+      <div>
+        post details post details page
+      </div>
+    )
+    }
+    
+  }
+
+
+
+
+-------------index.html---------------
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/a28d5ae6f7.js" crossorigin="anonymous"></script>
+    
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+
